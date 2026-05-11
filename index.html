@@ -16,6 +16,15 @@
       <button class="mode-btn" data-mode="longBreak">长休息</button>
     </div>
 
+    <div class="time-setting">
+      <label class="setting-label">工作时间（分钟）</label>
+      <div class="time-input-row">
+        <button class="adj-btn" id="decrBtn">−</button>
+        <input type="number" class="time-input" id="workMinutes" value="25" min="1" max="120">
+        <button class="adj-btn" id="incrBtn">+</button>
+      </div>
+    </div>
+
     <div class="timer-ring">
       <svg viewBox="0 0 200 200">
         <circle class="ring-bg" cx="100" cy="100" r="90" />
@@ -32,9 +41,9 @@
     </div>
 
     <div class="stats">
-      <div class="stat">
-        <span class="stat-value" id="sessionCount">0</span>
+      <div class="stat" id="tomatoStat">
         <span class="stat-label">完成番茄</span>
+        <div class="tomato-row" id="tomatoRow"></div>
       </div>
       <div class="stat">
         <span class="stat-value" id="totalFocusTime">0 分钟</span>

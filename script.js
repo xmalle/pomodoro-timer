@@ -7,8 +7,8 @@ const MODES = {
 const RING_CIRCUMFERENCE = 2 * Math.PI * 90; // ~565.48
 
 let currentMode = 'work';
-let timeLeft = MODES.work.minutes * 60;
-let totalTime = MODES.work.minutes * 60;
+let timeLeft = 25 * 60;
+let totalTime = 25 * 60;
 let timerInterval = null;
 let isRunning = false;
 let sessionCount = 0;
@@ -17,10 +17,13 @@ let totalFocusMinutes = 0;
 const timeDisplay = document.getElementById('timeDisplay');
 const startPauseBtn = document.getElementById('startPauseBtn');
 const resetBtn = document.getElementById('resetBtn');
-const sessionCountEl = document.getElementById('sessionCount');
 const totalFocusTimeEl = document.getElementById('totalFocusTime');
+const tomatoRow = document.getElementById('tomatoRow');
 const ringProgress = document.querySelector('.ring-progress');
 const modeBtns = document.querySelectorAll('.mode-btn');
+const workMinutesInput = document.getElementById('workMinutes');
+const decrBtn = document.getElementById('decrBtn');
+const incrBtn = document.getElementById('incrBtn');
 
 function playAlarm() {
   const ctx = new (window.AudioContext || window.webkitAudioContext)();
@@ -53,16 +56,21 @@ function updateRing() {
   ringProgress.style.stroke = MODES[currentMode].color;
 }
 
+function getWorkMinutes() {
+  const val = parseInt(workMinutesInput.value, 10);
+  return Math.max(1, Math.min(120, val || 25));
+}
+
 function switchMode(mode) {
   currentMode = mode;
-  timeLeft = MODES[mode].minutes * 60;
-  totalTime = MODES[mode].minutes * 60;
+  const minutes = mode === 'work' ? getWorkMinutes() : MODES[mode].minutes;
+  timeLeft = minutes * 60;
+  totalTime = minutes * 60;
   isRunning = false;
   clearInterval(timerInterval);
 
   updateDisplay();
   updateRing();
-  // 立即更新圆环到满额，禁用过渡以避免从旧位置动画过来
   ringProgress.style.transition = 'none';
   ringProgress.style.strokeDashoffset = 0;
   requestAnimationFrame(() => {
@@ -75,6 +83,16 @@ function switchMode(mode) {
   modeBtns.forEach(btn => {
     btn.classList.toggle('active', btn.dataset.mode === mode);
   });
+}
+
+function renderTomatoes() {
+  tomatoRow.innerHTML = '';
+  for (let i = 0; i < sessionCount; i++) {
+    const tomato = document.createElement('span');
+    tomato.className = 'tomato-icon';
+    tomato.textContent = '🍅';
+    tomatoRow.appendChild(tomato);
+  }
 }
 
 function tick() {
@@ -91,9 +109,9 @@ function tick() {
 
     if (currentMode === 'work') {
       sessionCount++;
-      totalFocusMinutes += MODES.work.minutes;
-      sessionCountEl.textContent = sessionCount;
+      totalFocusMinutes += getWorkMinutes();
       totalFocusTimeEl.textContent = `${totalFocusMinutes} 分钟`;
+      renderTomatoes();
       switchMode('shortBreak');
     } else {
       switchMode('work');
@@ -118,8 +136,9 @@ function toggleTimer() {
 function resetTimer() {
   clearInterval(timerInterval);
   isRunning = false;
-  timeLeft = MODES[currentMode].minutes * 60;
-  totalTime = MODES[currentMode].minutes * 60;
+  const minutes = currentMode === 'work' ? getWorkMinutes() : MODES[currentMode].minutes;
+  timeLeft = minutes * 60;
+  totalTime = minutes * 60;
   updateDisplay();
   updateRing();
   ringProgress.style.transition = 'none';
@@ -131,6 +150,35 @@ function resetTimer() {
   startPauseBtn.classList.remove('running');
 }
 
+function updateWorkMinutes(value) {
+  workMinutesInput.value = value;
+  // 如果当前处于停止状态的工作模式，更新时间显示
+  if (currentMode === 'work' && !isRunning) {
+    timeLeft = value * 60;
+    totalTime = value * 60;
+    updateDisplay();
+    ringProgress.style.transition = 'none';
+    ringProgress.style.strokeDashoffset = 0;
+    requestAnimationFrame(() => {
+      ringProgress.style.transition = 'stroke-dashoffset 1s linear';
+    });
+  }
+}
+
+decrBtn.addEventListener('click', () => {
+  const current = getWorkMinutes();
+  if (current > 1) updateWorkMinutes(current - 1);
+});
+
+incrBtn.addEventListener('click', () => {
+  const current = getWorkMinutes();
+  if (current < 120) updateWorkMinutes(current + 1);
+});
+
+workMinutesInput.addEventListener('change', () => {
+  updateWorkMinutes(getWorkMinutes());
+});
+
 modeBtns.forEach(btn => {
   btn.addEventListener('click', () => switchMode(btn.dataset.mode));
 });
@@ -139,5 +187,8 @@ startPauseBtn.addEventListener('click', toggleTimer);
 resetBtn.addEventListener('click', resetTimer);
 
 // 初始化
+timeLeft = getWorkMinutes() * 60;
+totalTime = getWorkMinutes() * 60;
 updateDisplay();
 updateRing();
+renderTomatoes();
